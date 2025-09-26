@@ -191,3 +191,55 @@ export const getUserData = async (requset, response)=>{
           message: error.message });
     }
 }
+
+//verifyEmail adresss
+export const verfiyEmail=async(request,response)=>{
+    try {
+        //get code
+        const {code}=request.params;
+
+        //check the code
+        if(!code){
+            return response.status(401).json({
+                message:'verification code is missing',
+                error:true,
+                success:false,
+            })
+        }
+
+        //check user from data base
+        const user=await UserModel.findById(code);
+        if(!user){
+             return response.status(401).json({
+            message: "Invalid verification link",
+            error: true,
+            success: false,
+        });
+        }
+
+        //check the before email verify the
+        if (user.verify_email) {
+        return response.status(200).json({
+            message: "Email already verified",
+            error: false,
+            success: true,
+        });
+        }
+
+         user.verify_email = true;
+         await user.save();
+        
+        return response.status(200).json({
+            message: "Email verified successfully",
+            error: false,
+            success: true,
+        });
+        
+    } catch (error) {
+        return response.status(500).json({
+        message: "Internal server error",
+        error: true,
+        success: false,
+        });
+    }
+}
