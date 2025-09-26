@@ -153,3 +153,41 @@ export const loginUser=async(request,response)=>{
         })
     }
 }
+
+//user get data after login
+export const getUserData = async (requset, response)=>{
+  
+    try {
+        const userId=requset.userId;
+        
+
+        //check user
+        if(!userId){
+            return response.status(401).json({
+            message:"Unauthorized",
+            error:true,
+            success:false,
+        })
+        }
+
+        //user from the database
+        const user=await UserModel.findById(userId);
+        if(!user){
+          return response.status(404).json({
+            message: "User not found",
+            error: true,
+            success: false,
+          });
+        }
+        response.status(200).json({ 
+          success: true,
+          data: user ,
+          message:"User data fetched successfully",
+        });
+    } catch (error) {
+        response.status(500).json({ 
+          success: false, 
+          error:true,
+          message: error.message });
+    }
+}
