@@ -1,5 +1,7 @@
 import UserModel from "../models/user.model.js";
 import bcrypt from 'bcrypt'
+import generatedAccesToken from "../utill/generatedAccesToken.js";
+import generatedRefreshToken from "../utill/generatedRefreshToken.js";
 
 //register user
 export const registerUsers=async(request,response)=>{
@@ -108,6 +110,38 @@ export const loginUser=async(request,response)=>{
                 success:false
             });
         }
+
+        //access and refesh token create
+        const accessToken=await generatedAccesToken(user);
+        const refreshToken=await generatedRefreshToken(user._id);
+
+        //update last login 
+        const updateUser=await UserModel.findOneAndUpdate(user._id,{
+            last_lagin_date: new Date()
+        },{new:true}
+        )
+
+        //add cookies
+        const cookieOptions={
+            httpOnly:true,
+            secure:true,
+            sameSite:'None',
+        }
+
+        //add to token to cokies
+        response.cookie("accessToken",accessToken,cookieOptions);
+        response.cookie("refeshToken",refreshToken,cookieOptions);
+
+        return response.status(201).json({
+                message:'User Logged in Successfully',
+                data:{
+                  updateUser,
+                  accessToken, 
+                  refreshToken,
+                },
+                error:false,
+                success:true
+            });
         
     } catch (error) {
         console.log(error.message)
