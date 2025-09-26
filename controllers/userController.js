@@ -57,3 +57,65 @@ export const registerUsers=async(request,response)=>{
         })
     }
 }
+
+//login user
+export const loginUser=async(request,response)=>{
+    try {
+        const{email,password}=request.body;
+        //check email and password empty
+        if(!email||!password){
+            return response.status(400).json({
+                message:'All Fields are required',
+                error:true,
+                success:false
+            })
+        }
+
+        //find user in data base
+        const user=await UserModel.findOne({email});
+        if(!user){
+            return response.status(400).json({
+                message:'User not Registered',
+                error:true,
+                success:false
+            });
+        }
+
+        //check user status is ACTIVE
+        if(user.status!=="ACTIVE"){
+             return response.status(400).json({
+                message:'User is inative',
+                error:true,
+                success:false
+            });
+        }
+
+        //check email verfiy
+        if(!user.verify_email){
+            return response.status(400).json({
+                message:'Please verify your email before logging in',
+                error:true,
+                success:false
+            });
+        }
+
+        //verify password
+        const checkpassword=await bcrypt.compareSync(password,user.password)
+        if(!checkpassword){
+            return response.status(400).json({
+                message:'Invalid Credentials (Incorrect password)',
+                error:true,
+                success:false
+            });
+        }
+        
+    } catch (error) {
+        console.log(error.message)
+        return response.status(500).json({
+            message:'Internal sever error',
+            error:true,
+            success:false
+            
+        })
+    }
+}
