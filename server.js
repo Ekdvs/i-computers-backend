@@ -6,6 +6,12 @@ import userRouter from "./routers/userRouter.js";
 dotenv.config();
 const app=express()
 
+app.use(
+  cors({
+    origin: "http://localhost:5173", 
+    credentials: true, })
+);
+
 //add midlware
 app.use(express.json());
 app.use(express.urlencoded({extended:true}))

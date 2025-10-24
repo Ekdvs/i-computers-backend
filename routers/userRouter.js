@@ -14,6 +14,6 @@ userRouter.post('/login',loginUser);
 userRouter.get('/me',auth,getUserData);
 
 //user Email verfiy
-userRouter.get("/verify-email/:code", verfiyEmail);
+userRouter.post("/verify-email/:code", verfiyEmail);
 
 export default userRouter;
