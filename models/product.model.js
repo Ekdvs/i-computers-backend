@@ -31,14 +31,15 @@ const productSchema=new mongoose.Schema({
         type:String,
         required:true
     },
-    model:{
+    modelNumber:{
         type:String,
         required:true,
         default:"Standard"
     },
     brand:{
         type:String,
-        required:true
+        required:true,
+        default:"Generic" 
     },
     stock:{
         type:Number,
