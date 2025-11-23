@@ -2,6 +2,7 @@ import UserModel from "../models/user.model.js";
 import bcrypt from 'bcrypt'
 import generatedAccesToken from "../utill/generatedAccesToken.js";
 import generatedRefreshToken from "../utill/generatedRefreshToken.js";
+import axios from "axios";
 
 // Use same config for login & logout
 const cookieOptions = {
@@ -393,3 +394,83 @@ export const chageUserStatus=async(request,response)=>{
         });
     }
 }
+
+//google login
+export const googleLogin = async (req, res) => {
+  try {
+    const { access_token } = req.body;
+
+    if (!access_token) {
+      return res.status(400).json({
+        message: "Access token missing",
+        success: false
+      });
+    }
+
+    
+    const googleResponse = await axios.get(
+      `https://www.googleapis.com/oauth2/v3/userinfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`
+        }
+      }
+    );
+    console.log(googleResponse.data);
+
+    const { email, name, picture } = googleResponse.data;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Google user info missing email",
+        success: false
+      });
+    }
+
+    // 2️⃣ Check if user exists
+    let user = await UserModel.findOne({ email });
+
+    // 3️⃣ If not, create new user
+    if (!user) {
+      user = await UserModel.create({
+        name: name || "Google User",
+        email,
+        avatar: picture,
+        password: "GoogleOAuth", 
+        provider: "google"
+      });
+    }
+
+    // 4️⃣ Generate tokens
+    const accessToken = generatedAccesToken(user);
+    const refreshToken = generatedRefreshToken(user._id);
+
+    // 5️⃣ Store refresh token in cookie
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    return res.status(200).json({
+      message: "Google Login Successful",
+      success: true,
+      data: {
+        updateUser: user,
+        accessToken,
+        refreshToken
+      }
+    });
+
+  } catch (error) {
+    console.log("Google Login Error:", error.message);
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false
+    });
+  }
+};

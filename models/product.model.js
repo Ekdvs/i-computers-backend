@@ -31,7 +31,7 @@ const productSchema=new mongoose.Schema({
         type:String,
         required:true
     },
-    modelNumber:{
+    model:{
         type:String,
         required:true,
         default:"Standard"
