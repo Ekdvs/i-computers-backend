@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt'
 import generatedAccesToken from "../utill/generatedAccesToken.js";
 import generatedRefreshToken from "../utill/generatedRefreshToken.js";
 import axios from "axios";
+import generatedOtp from "../utill/genarateOtp.js";
+import { sendOtpMail } from "../services/email/mailtemplate/sendMail.js";
 
 // Use same config for login & logout
 const cookieOptions = {
@@ -51,6 +53,7 @@ export const registerUsers=async(request,response)=>{
 
         //send email verifylink
         const verifyurl=`${process.env.FRONTEND_URL}/verify-email?code=${newUser?._id}`;
+        await sendWelcomeMail(newUser,verifyurl);
 
         return response.status(201).json({
             message:'User Registered Successfully',
@@ -198,7 +201,7 @@ export const getUserData = async (requset, response)=>{
 export const verfiyEmail=async(request,response)=>{
     try {
         //get code
-        const {code}=request.params;
+        const {code}=request.params.code;
 
         //check the code
         if(!code){
@@ -444,6 +447,7 @@ export const googleLogin = async (req, res) => {
     // 4️⃣ Generate tokens
     const accessToken = generatedAccesToken(user);
     const refreshToken = generatedRefreshToken(user._id);
+    console.log("Generated Tokens:", { accessToken });
 
     // 5️⃣ Store refresh token in cookie
     res.cookie("accessToken", accessToken, {
@@ -471,6 +475,233 @@ export const googleLogin = async (req, res) => {
     return res.status(500).json({
       message: "Internal server error",
       success: false
+    });
+  }
+};
+
+//send otp for password reset
+export const forgotPassword = async (requset, response) => {
+  try {
+    const email =requset.params.email;
+   
+    // Find user
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+      return response.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Create OTP
+    const otp = generatedOtp();
+    //console.log("Generated OTP:", otp);
+    
+
+    // OTP valid for 5 minutes
+    const otpExpiry = Date.now() + 5 * 60 * 1000;
+    
+
+    // Update user
+    const updateUser = await UserModel.findByIdAndUpdate(user._id, {
+      forgot_password_otp: otp,
+      forgot_password_expiry: new Date(otpExpiry).toISOString(),
+    });
+
+    // Send OTP if update successful
+    if (updateUser) {
+        await sendOtpMail(user,otp);
+      //await sendOtp(user, otp); // Make sure to await
+      console.log("✅ OTP email sent successfully!"+updateUser.email);
+    }
+
+    return response.status(200).json({
+      message: "Password responseet OTP sent to your email",
+      error: false,
+      success: true,
+    });
+
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    return response.status(500).json({
+      message: "Something went wrong during forgot password process",
+      error: true,
+      success: false,
+    });
+  }
+};
+
+//otp verfiy
+export const verifyForgotPasswordOtp= async (requset,response)=>{
+  try {
+     
+    //get user and password
+    const {email,otp}=requset.body;
+
+      //check otp and email exist
+    if(!email||!otp){
+      return response.status(400).json({
+        message:'Provide email and otp',
+        error:true,
+        success:false,
+      })
+  }
+    //check user
+    const user=await UserModel.findOne({email})
+
+    if(!user){
+      return response.status(400).json({
+        message:'Not found User',
+        error:true,
+        success:false,
+      })
+    }
+
+    
+    //console.log(otp);
+    //console.log(user.forgot_password_otp)
+
+    //check otp expire
+    const currentTime=new Date();
+    if(user.forgot_password_expiry<currentTime){
+      return response.status(400).json({
+        message:'Otp expaired',
+        error:true,
+        success:false,
+      })
+    }
+
+    //check otp
+    if(otp!==user.forgot_password_otp){
+      return response.status(400).json({
+        message:'Otp invalid',
+        error:true,
+        success:false,
+      })
+    }
+
+    //update database
+    await UserModel.findByIdAndUpdate(user._id,{
+      forgot_password_expiry:null,
+      forgot_password_otp:null
+    })
+
+    return response.status(200).json({
+      message: "Verify Otp sussesfully ",
+      error: false,
+      success: true,
+    });
+
+    
+  } 
+  catch (error) {
+    return response.status(500).json({
+      message: "Internal Server Error",
+      error: true,
+      success: false,
+    });
+  }
+
+}
+
+//reseet password
+export const resetPassword = async (requset, response) => {
+  try {
+    const { email, password } = requset.body;
+
+    // Validate input
+    if (!email || !password) {
+      return response.status(400).json({
+        message: "Email and password are required",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Find user
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return response.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 16);
+
+    // Update password
+    user.password = hashedPassword;
+    await user.save();
+
+    return response.status(200).json({
+      message: "Password responseet successfully",
+      error: false,
+      success: true,
+    });
+  } catch (error) {
+    console.error(error);
+    return response.status(500).json({
+      message: "Internal Server Error",
+      error: true,
+      success: false,
+    });
+  }
+};
+
+//update user profile
+export const updateUsers = async (requset, response) => {
+  try {
+    const userId = requset.userId;
+    const { name, mobile,avatar} = requset.body;
+    
+     
+    //check user id
+    if (!userId) {
+      return response.status(401).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    //check user in data base
+    const existingUser = await UserModel.findById(userId);
+    if (!existingUser) {
+      return response.status(404).json({
+        message: "User not found ",
+        error: true,
+        success: false,
+      });
+    }
+
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (mobile) updateData.mobile = mobile;
+
+    if (avatar) {
+      updateData.avatar = avatar;
+    }
+
+    const updatedUser = await UserModel.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    }).select("-password -refresponseh_token");
+
+    return response.status(200).json({
+      message: "User updated successfully",
+      data: updatedUser,
+      success: true,
+      error: false,
+    });
+  } catch (error) {
+    console.error("Update user error:", error);
+    return response.status(500).json({
+      message: "Something went wrong during update",
+      error: true,
+      success: false,
     });
   }
 };

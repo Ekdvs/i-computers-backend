@@ -20,8 +20,7 @@ const productSchema=new mongoose.Schema({
         required:true
     },
     labeledPrice:{
-        type:Number,
-        required:true
+        type:Number
     },
     image:{
         type:[String],
@@ -57,12 +56,12 @@ const productSchema=new mongoose.Schema({
     },
     ratings:{
         type:Number,
-        required:true,
+        
         default:0
     },
     numOfReviews:{
         type:Number,
-        required:true,
+        
         default:0
     },
     coments:{

@@ -4,9 +4,11 @@ const admin = async(request,response,next)=>{
     try {
         //get user id from auth middlewear
         const userId=request.userId;
+        //console.log("Admin middleware userId:", userId);
 
         //find user id from data base
         const user = await UserModel.findById(userId);
+        ////console.log("Admin middleware user:", user);
         if(!user){
            return response.status(401).json({
             message: "Unauthorized: User not found",

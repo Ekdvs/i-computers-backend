@@ -1,32 +1,29 @@
-import jwt from "jsonwebtoken"; 
+import jwt from "jsonwebtoken";
 import UserModel from "../models/user.model.js";
-const auth=async(request,response,next)=>{
-    try {
-        // Get token from cookies or Authorization header
-    const token = request.cookies?.accessToken ||
-                  (request.headers.authorization && request.headers.authorization.split(" ")[1]);
-    
-    //check the token
-    if(!token){
-       return response.status(401).json({
-        message: "No token provided. Unauthorized",
-        error: true,
-        success: false,
-      }); 
-    }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.SECRET_KEY_ACCESS_TOKEN);
+const auth = async (request, response, next) => {
+  try {
+    // Extract token
+    let token =
+      request.cookies?.accessToken ||
+      (request.headers.authorization?.startsWith("Bearer ")
+        ? request.headers.authorization.split(" ")[1]
+        : null);
 
-    if (!decoded) {
+    console.log("🔍 Received Token:", token);
+
+    if (!token) {
       return response.status(401).json({
-        message: "Invalid token. Unauthorized",
+        message: "No token provided",
         error: true,
         success: false,
       });
     }
 
-    // Find user in DB
+    // Verify
+    const decoded = jwt.verify(token, process.env.SECRET_KEY_ACCESS_TOKEN);
+
+    // Find user
     const user = await UserModel.findById(decoded.id).select("-password");
     if (!user) {
       return response.status(404).json({
@@ -36,18 +33,18 @@ const auth=async(request,response,next)=>{
       });
     }
 
-    request.userId = decoded.id;
+    request.userId = user._id;
     next();
 
-        
-    } catch (error) {
-    console.error("Auth middleware error:", error);
+  } catch (error) {
+    console.error("❌ Auth middleware error:", error.message);
+
     return response.status(401).json({
       message: "Invalid or expired token",
       error: true,
       success: false,
     });
-    }
-}
+  }
+};
 
 export default auth;

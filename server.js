@@ -3,6 +3,7 @@ import express from "express"
 import connectDB from "./configs/db.js";
 import userRouter from "./routers/userRouter.js";
 import cors from "cors";
+import productRouter from "./routers/producrRouter.js";
 
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.urlencoded({extended:true}))
 
 // ✅ API routes
 app.use("/api/user", userRouter);
+app.use('/api/product',productRouter)
 
 //create port
 connectDB().then(()=>{
