@@ -143,45 +143,46 @@ export const updateproductById =async (request,response)=>{
 }
 
 //get product by id
-export const getProductById = async(request,response)=>{
-    try {
-        const productId=request.params.id;
+export const getProductById = async (request, response) => {
+  try {
+    const productId = request.params.productId;
 
-        if(!productId){
-            return response.status(400).json({
-                message:"Product id is required",
-                error:true,
-                success:false
-               }) 
-        }
-
-        const product=await Product.findById(productId);
-
-        if(!product){
-            return response.status(404).json({
-                message:"Product not found",
-                error:true,
-                success:false,
-                
-               }) 
-        }
-
-        return response.status(200).json({
-            message:"Product deleted successfully",
-            error:false,
-            success:true,
-            data:product
-           })
-        
-    } catch (error) {
-        console.error("Update user error:", error);
-        return response.status(500).json({
-        message: "Something went wrong during update",
+    if (!productId) {
+      return response.status(400).json({
+        message: "Product id is required",
         error: true,
         success: false,
-        });
+      });
     }
-}
+
+    // Find by custom productID (PID-1001)
+    const product = await Product.findOne({ productID: productId });
+
+    if (!product) {
+      return response.status(404).json({
+        message: "Product not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    return response.status(200).json({
+      message: "Product fetched successfully",
+      error: false,
+      success: true,
+      data: product,
+    });
+
+  } catch (error) {
+    console.error("Get product error:", error);
+    return response.status(500).json({
+      message: "Something went wrong during get product",
+      error: true,
+      success: false,
+    });
+  }
+};
+
 
 //search products
 export const searchProducts = async(request,response)=>{
