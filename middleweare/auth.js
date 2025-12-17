@@ -34,6 +34,7 @@ const auth = async (request, response, next) => {
     }
 
     request.userId = user._id;
+    request.user = user;
     next();
 
   } catch (error) {

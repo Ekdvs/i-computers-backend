@@ -9,7 +9,7 @@ const orderRouter = express.Router();
 orderRouter.post("/checkout/cart", auth, createOrder);
 orderRouter.post("/checkout/buy-now", auth, createOrderBuyNow);
 orderRouter.get("/my-orders", auth, getMyOrders);
-orderRouter.get("/get:id", auth,getOrderById);
+orderRouter.get("/get/:id",getOrderById);
 
 
 // Admin

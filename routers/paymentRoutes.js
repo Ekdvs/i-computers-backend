@@ -4,7 +4,7 @@ import { handlePayHereNotification, initiatePayHerePayment } from "../controller
 
 const paymentRoutes=express.Router();
 
-paymentRoutes.get('/payhere/initiate',auth,initiatePayHerePayment)
+paymentRoutes.get('/payhere/initiate/:orderId',initiatePayHerePayment)
 paymentRoutes.post('/payhere/notify',handlePayHereNotification)
 
 export default paymentRoutes;

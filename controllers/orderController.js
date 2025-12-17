@@ -2,6 +2,7 @@ import { request } from "express";
 import Cart from "../models/cart.model.js";
 import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
+import { nanoid } from "nanoid";
 
 
 //create order cart->checkout
@@ -70,8 +71,10 @@ export const createOrder =async(request,response)=>{
 //create order buy->checkout
 export const createOrderBuyNow = async(request,response)=>{
     try {
+        
         const userId=request.userId;
         const {productId,quantity,address ,phone,notes,name} = request.body;
+        console.log("createOrderBuyNow called with:", {productId});
 
         if(!productId||!quantity){
             return response.status(400).json({
@@ -94,8 +97,8 @@ export const createOrderBuyNow = async(request,response)=>{
         const order = await Order.create({
         orderId: `ORD-${nanoid(10)}`,
       user: userId,
-      email: req.user.email,
-      name: req.user.name,
+      email:request.user.email,
+      name:request.user.name,
       address,
       phone,
       notes,
@@ -123,7 +126,7 @@ export const createOrderBuyNow = async(request,response)=>{
         });
 
     } catch (error) {
-        console.error("Update user error:", error);
+        console.error("Create order buy now error:", error);
         return response.status(500).json({
         message: "Something went wrong during update",
         error: true,
@@ -168,8 +171,8 @@ export const getMyOrders = async(request,response)=>{
 export const getOrderById = async(request,response)=>{
     try {
         const orderId=request.params.id;
-        
-        const order=await Order.findById(orderId).populate("user","name email");
+    
+        const order=await Order.findOne({orderId:orderId}).populate("user","name email");
 
         if(!order){
             return response.status(404).json({

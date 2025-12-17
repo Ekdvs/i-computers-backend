@@ -78,3 +78,106 @@ export const otpEmailTemplate = (user, otp) => `
 </body>
 </html>
 `;
+
+
+
+export const invoiceEmailTemplate = (user, order) => {
+  const itemsHtml = order.items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:12px;border-bottom:1px solid #eee;">
+            ${item.name}
+          </td>
+          <td style="padding:12px;border-bottom:1px solid #eee;text-align:center;">
+            ${item.quantity}
+          </td>
+          <td style="padding:12px;border-bottom:1px solid #eee;text-align:right;">
+            LKR ${(item.price * item.quantity).toFixed(2)}
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+
+  return `
+  <div style="font-family: Arial, Helvetica, sans-serif; background:#f5f7fb; padding:30px;">
+    <div style="max-width:700px;margin:auto;background:#ffffff;border-radius:8px;overflow:hidden;">
+
+      ${generateEmailHeader()}
+
+      <!-- Body -->
+      <div style="padding:30px;">
+        <h2 style="margin-top:0;color:#333;">Payment Successful 🎉</h2>
+        <p style="color:#555;font-size:15px;">
+          Hi <strong>${user.name}</strong>,<br/><br/>
+          Thank you for shopping with <strong>I Computers Shop</strong>.
+          Your payment has been successfully processed.
+        </p>
+
+        <!-- Order Info -->
+        <div style="margin:25px 0;">
+          <p><strong>Order ID:</strong> ${order.orderId}</p>
+          <p><strong>Payment Status:</strong>
+            <span style="color:#28a745;font-weight:bold;">PAID</span>
+          </p>
+          <p><strong>Order Date:</strong>
+            ${new Date(order.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+
+        <!-- Items Table -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f8f9fa;">
+              <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Item</th>
+              <th style="padding:12px;text-align:center;border-bottom:2px solid #ddd;">Qty</th>
+              <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        <!-- Total -->
+        <div style="margin-top:25px;text-align:right;">
+          <p style="font-size:18px;font-weight:bold;">
+            Total: <span style="color:#007BFF;">
+              LKR ${order.total.toFixed(2)}
+            </span>
+          </p>
+        </div>
+
+        <!-- Delivery -->
+        <div style="margin-top:30px;">
+          <h3 style="margin-bottom:8px;">Delivery Details</h3>
+          <p style="color:#555;">
+            ${order.address}<br/>
+            ${order.phone}
+          </p>
+        </div>
+
+        <!-- CTA -->
+        <div style="margin-top:30px;text-align:center;">
+          <a href="http://localhost:5173/orders"
+            style="
+              background:#007BFF;
+              color:#ffffff;
+              padding:14px 26px;
+              text-decoration:none;
+              border-radius:6px;
+              font-size:16px;
+              display:inline-block;
+            ">
+            View My Orders
+          </a>
+        </div>
+      </div>
+
+      ${generateEmailFooter()}
+
+    </div>
+  </div>
+  `;
+};
