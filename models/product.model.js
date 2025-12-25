@@ -54,21 +54,15 @@ const productSchema=new mongoose.Schema({
         required:true,
         default:true
     },
-    ratings:{
-        type:Number,
-        
-        default:0
-    },
-    numOfReviews:{
-        type:Number,
-        
-        default:0
-    },
-    coments:{
-        type:[mongoose.Schema.Types.ObjectId],
-        ref:"Review",
-        default:[]
+    averageRating: {
+         type: Number,
+          default: 0
+     },
+    totalReviews: { 
+        type: Number, 
+        default: 0 
     }
+    
 },{
     timestamps:true
 })

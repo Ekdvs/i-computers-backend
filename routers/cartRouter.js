@@ -13,4 +13,10 @@ cartRouter.put('/updatecart/:productId',auth,updateCartItemQuantity);
 //remove item from cart
 cartRouter.delete('/deletecart/:productId',auth,deleteCartItem);
 
+
+/*cartRouter.get('/getcart', auth, (req, res) => {
+  console.log("44444444444444"); // this will run when route is called
+  res.send("Test route works"); // must send a response
+});*/
+
 export default cartRouter;

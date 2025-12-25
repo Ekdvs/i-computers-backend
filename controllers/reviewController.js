@@ -4,86 +4,76 @@ import UserModel from "../models/user.model.js";
 
 
 //add review & rating
-export const addReview = async (requset, response) => {
+export const addReview = async (request, response) => {
   try {
-    const { productId, rating, comment } = requset.body;
-    const userId = requset.userId; // set by auth middleware
+    const { productId, rating, comment } = request.body;
+    const userId = request.userId;
 
-    //check all think
     if (!productId || !rating || !comment?.trim()) {
       return response.status(400).json({
         message: "Product, rating, and comment are required",
-        error: true,
         success: false,
+        error: true,
       });
     }
 
-    //product find from data base
     const product = await Product.findById(productId);
-
     if (!product) {
       return response.status(404).json({
         message: "Product not found",
-        error: true,
         success: false,
       });
     }
 
-    // check user
-    const user = await UserModel.findById(userId); // FIX: no { userId }
-
+    const user = await UserModel.findById(userId);
     if (!user) {
       return response.status(404).json({
         message: "User not found",
-        error: true,
         success: false,
       });
     }
 
-    // prevent double review
     const already = await Review.findOne({ user: userId, product: productId });
-
     if (already) {
       return response.status(400).json({
         message: "You already reviewed this product",
-        error: true,
         success: false,
       });
     }
 
-    // create review
+    // ✅ CREATE REVIEW (FIXED)
     const review = await Review.create({
       user: userId,
       product: productId,
-      name: user.name || "Anonymous",
-      rating: Number(rating), // ensure number
+      name: user.name,
+      rating: Number(rating),
       comment: comment.trim(),
     });
 
-    // recalc product stats
+    // ✅ RECALCULATE RATINGS
     const reviews = await Review.find({ product: productId });
-    const totalRating = reviews.reduce((acc, r) => acc + Number(r.rating || 0), 0);
-    const avgRating = reviews.length ? totalRating / reviews.length : 0;
+    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
 
-    product.averageRating = avgRating;
+    product.averageRating = totalRating / reviews.length;
     product.totalReviews = reviews.length;
     await product.save();
 
-    return response.status(200).json({
+    response.status(201).json({
       message: "Review added successfully",
       data: review,
       success: true,
     });
-  } 
-  catch (error) {
-    //console.error("addReview error:", error);
-    return response.status(500).json({
+
+  } catch (error) {
+    console.error("addReview error:", error);
+    response.status(500).json({
       message: "Something went wrong",
-      error: true,
       success: false,
-    }); 
+      error: true,
+    });
   }
 };
+
 
 //get reviews for product id
 export const getReviews = async (requset, response) => {

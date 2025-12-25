@@ -1,6 +1,7 @@
 import { request } from "express";
 import Product from "../models/product.model.js";
 import UserModel from "../models/user.model.js";
+import Review from "../models/review.model.js";
 
 
 //create product 
@@ -166,11 +167,21 @@ export const getProductById = async (request, response) => {
       });
     }
 
+    //get reviews for this product
+    const reviews = await Review.find({ product: product._id })
+      .populate("user", "name")   // ⭐ get reviewer name
+      .sort({ createdAt: -1 });
+
     return response.status(200).json({
       message: "Product fetched successfully",
       error: false,
       success: true,
-      data: product,
+      data: {
+        product,
+        reviews,
+        averageRating: product.averageRating,
+        totalReviews: product.totalReviews,
+      },
     });
 
   } catch (error) {

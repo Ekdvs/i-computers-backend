@@ -8,6 +8,7 @@ import cartRouter from "./routers/cartRouter.js";
 import ratingRouter from "./routers/ratingRouter.js";
 import orderRouter from "./routers/orderRoutes.js";
 import paymentRoutes from "./routers/paymentRoutes.js";
+import couponRouter from "./routers/couponRouter.js";
 
 
 dotenv.config();
@@ -30,6 +31,7 @@ app.use('/api/cart',cartRouter)
 app.use('/api/rating',ratingRouter)
 app.use('/api/order',orderRouter)
 app.use('/api/payment',paymentRoutes)
+app.use("/api/coupon", couponRouter);
 
 //create port
 connectDB().then(()=>{
