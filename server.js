@@ -33,6 +33,9 @@ app.use('/api/order',orderRouter)
 app.use('/api/payment',paymentRoutes)
 app.use("/api/coupon", couponRouter);
 
+app.get("/", (req, res) => {
+  res.send("Server is running!");
+});
 //create port
 connectDB().then(()=>{
     app.listen(process.env.PORT||5000,()=>{

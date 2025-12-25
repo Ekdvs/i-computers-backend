@@ -1,5 +1,6 @@
 import Order from "../models/order.model.js";
 import crypto from "crypto";
+import { sendInvoiceMail } from "../services/email/mailtemplate/sendMail.js";
 
 // Generate PayHere hash for payment initiation
 export const generatePayHereHash = (
@@ -87,17 +88,22 @@ export const initiatePayHerePayment = async (req, res) => {
 // -------------------- PayHere Webhook --------------------
 export const handlePayHereNotification = async (req, res) => {
   console.log("PayHere notification received:", req.body);  
+
+  if (!req.body || Object.keys(req.body).length === 0) {
+    console.error("❌ Empty body received");
+    return res.sendStatus(400);
+  }
+
   try {
     const {
       merchant_id,
-      order_id,         // PayHere sends "order_id"
+      order_id,
       payhere_amount,
       payhere_currency,
       status_code,
       md5sig
     } = req.body;
 
-    // Find order by orderId field
     const order = await Order.findOne({ orderId: order_id });
     if (!order) return res.sendStatus(404);
 
@@ -129,15 +135,26 @@ export const handlePayHereNotification = async (req, res) => {
     }
 
     // Update order status
-    if (status_code === "2"){ 
-      order.status = "paid";
-      await sendInvoiceMail(order.user, order);
+    switch (status_code) {
+      case "2":
+        order.status = "paid";
+        await sendInvoiceMail(order.user, order);
+        break;
+      case "0":
+        order.status = "pending";
+        break;
+      case "-1":
+        order.status = "cancelled";
+        break;
+      case "-2":
+        order.status = "failed";
+        break;
+      case "-3":
+        order.status = "refunded";
+        break;
+      default:
+        order.status = "failed";
     }
-    else if (status_code === "0") order.status = "pending";
-    else if (status_code === "-1") order.status = "cancelled";
-    else if (status_code === "-2") order.status = "failed";
-    else if (status_code === "-3") order.status = "refunded";
-    else order.status = "failed";
 
     await order.save();
     return res.sendStatus(200);
@@ -147,3 +164,4 @@ export const handlePayHereNotification = async (req, res) => {
     return res.sendStatus(500);
   }
 };
+
