@@ -181,3 +181,42 @@ export const invoiceEmailTemplate = (user, order) => {
   </div>
   `;
 };
+
+// Coupon email template
+export const couponEmailTemplate = (userName, coupon) => {
+  // Determine discount text
+  const discountText =
+    coupon.type === "PERCENT"
+      ? `${coupon.value}% off`
+      : `$${coupon.value} off`;
+
+  // Format expiry date
+  const expiry = coupon.expiryDate
+    ? new Date(coupon.expiryDate).toLocaleDateString()
+    : "N/A";
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Your Special Coupon</title>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f0f2f5;">
+  <div style="max-width:600px; margin:40px auto; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+    ${generateEmailHeader ? generateEmailHeader() : ""}
+    <div style="padding:30px 20px; text-align:center; color:#333;">
+      <p>Hello <strong>${userName}</strong>,</p>
+      <p>We have a special coupon just for you!</p>
+      <h2 style="font-size:28px; color:#007BFF; margin:20px 0;">${coupon.code}</h2>
+      <p>Get <strong>${discountText}</strong> on your next purchase.</p>
+      <p>Expires on: <strong>${expiry}</strong></p>
+      <a href="${process.env.FRONTEND_URL}" style="display:inline-block; margin-top:25px; padding:12px 25px; background-color:#007BFF; color:#fff; text-decoration:none; border-radius:50px; font-weight:bold;">Shop Now</a>
+    </div>
+    ${generateEmailFooter ? generateEmailFooter() : ""}
+  </div>
+</body>
+</html>
+  `;
+};

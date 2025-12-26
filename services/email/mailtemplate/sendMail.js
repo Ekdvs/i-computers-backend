@@ -1,7 +1,7 @@
 
 import { generateInvoicePDF } from "../../../utill/invoicePdf.js";
 import transporter from "../mailer.js";
-import { invoiceEmailTemplate, otpEmailTemplate, welcomeEmailTemplate } from "./mails.js";
+import { couponEmailTemplate, invoiceEmailTemplate, otpEmailTemplate, welcomeEmailTemplate } from "./mails.js";
 
 //send welcome mails
 export const sendWelcomeMail =async(user,verifyurl)=>{
@@ -54,3 +54,18 @@ export const sendInvoiceMail =async(user,order)=>{
         console.error("❌ Failed to send email:", err);
     }
 }
+
+export const sendCoupon = async (emailList, username, coupon) => {
+  try {
+    await  transporter.sendMail({
+      from: `"Online Shopping" <${process.env.EMAIL_USER}>`,
+      to: emailList,
+      subject: "We have a special coupon just for you!",
+      html: couponEmailTemplate(username, coupon), // 🔥 Import template
+    });
+    //console.log("✅ coupon email sent successfully!");
+  } catch (err) {
+    console.error("❌ Failed to send email:", err);
+  }
+};
+

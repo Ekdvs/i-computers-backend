@@ -1,7 +1,7 @@
 import express from "express";
 import auth from "../middleweare/auth.js";
 import admin from "../middleweare/admin.js";
-import { createCoupon, deleteCoupon, getCoupons, updateCoupon } from "../controllers/couponController.js";
+import { applyCoupon, createCoupon, deleteCoupon, getCoupons, updateCoupon } from "../controllers/couponController.js";
 
 
 const couponRouter = express.Router();
@@ -19,6 +19,6 @@ couponRouter.put("/update/:id", auth, admin, updateCoupon);
 couponRouter.delete("/delete/:id", auth,admin, deleteCoupon);
 
 // User apply
-//couponRouter.post("/apply", auth, applyDiscount);
+couponRouter.post("/apply", auth, applyCoupon);
 
 export default couponRouter;

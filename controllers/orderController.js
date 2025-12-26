@@ -3,28 +3,41 @@ import Cart from "../models/cart.model.js";
 import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
 import { nanoid } from "nanoid";
+import Coupon from "../models/coupon.model.js";
 
 
 export const createOrder = async (req, res) => {
   try {
     const userId = req.userId;
-    const { productId, quantity, address, phone, notes, name } = req.body;
+    const {
+      productId,
+      quantity,
+      address,
+      phone,
+      notes,
+      name,
+      couponCode,
+    } = req.body;
 
     let items = [];
-    let total = 0;
+    let subtotal = 0;
 
-    // Buy Now flow
+    // =========================
+    // 1️⃣ BUILD ITEMS + SUBTOTAL
+    // =========================
+
     if (productId && quantity) {
+      // BUY NOW
       const product = await Product.findById(productId);
+
       if (!product || product.stock < quantity) {
-        return res.status(404).json({
-          message: "Product not found or insufficient stock",
+        return res.status(400).json({
           success: false,
-          error: true,
+          message: "Product unavailable or insufficient stock",
         });
       }
 
-      total = product.price * quantity;
+      subtotal = product.price * quantity;
 
       items.push({
         productID: product._id,
@@ -34,13 +47,11 @@ export const createOrder = async (req, res) => {
         image: product.image?.[0] || "",
       });
 
-      // Reduce stock
       await Product.findByIdAndUpdate(productId, {
         $inc: { stock: -quantity },
       });
-
     } else {
-      // Cart checkout flow
+      // CART CHECKOUT
       const cart = await Cart.findOne({ user: userId }).populate(
         "items.product",
         "name price image stock"
@@ -48,58 +59,136 @@ export const createOrder = async (req, res) => {
 
       if (!cart || cart.items.length === 0) {
         return res.status(400).json({
-          message: "Cart is empty",
           success: false,
-          error: true,
+          message: "Cart is empty",
         });
       }
 
-      items = cart.items.map((item) => {
-        total += item.product.price * item.quantity;
-        return {
+      for (const item of cart.items) {
+        if (item.product.stock < item.quantity) {
+          return res.status(400).json({
+            success: false,
+            message: `${item.product.name} out of stock`,
+          });
+        }
+
+        subtotal += item.product.price * item.quantity;
+
+        items.push({
           productID: item.product._id,
           name: item.product.name,
           price: item.product.price,
           quantity: item.quantity,
           image: item.product.image?.[0] || "",
-        };
-      });
+        });
 
-      // Reduce stock
-      for (let i of cart.items) {
-        await Product.findByIdAndUpdate(i.product._id, {
-          $inc: { stock: -i.quantity },
+        await Product.findByIdAndUpdate(item.product._id, {
+          $inc: { stock: -item.quantity },
         });
       }
 
-      // Clear cart
       await Cart.findOneAndDelete({ user: userId });
     }
 
-    // Create order
+    // =========================
+    // 2️⃣ APPLY COUPON
+    // =========================
+
+    let discount = 0;
+    let couponSnapshot = null;
+
+    if (couponCode) {
+      const coupon = await Coupon.findOne({
+        code: couponCode.toUpperCase(),
+        isActive: true,
+        expiryDate: { $gte: new Date() },
+      });
+
+      if (!coupon) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired coupon",
+        });
+      }
+
+      if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon usage limit reached",
+        });
+      }
+
+      if (coupon.usersUsed.includes(userId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon already used by you",
+        });
+      }
+
+      // ✅ Minimum order amount check
+      if (subtotal < coupon.minOrderAmount) {
+        return res.status(400).json({
+          success: false,
+          message: `Minimum order LKR ${coupon.minOrderAmount} required`,
+        });
+      }
+
+      // ✅ Calculate discount
+      if (coupon.type === "PERCENT") {
+        discount = (subtotal * coupon.value) / 100;
+      }
+
+      if (coupon.type === "FLAT") {
+        discount = coupon.value;
+      }
+
+      // ✅ Never exceed subtotal
+      discount = Math.min(discount, subtotal);
+
+      // Snapshot saved inside order
+      couponSnapshot = {
+        code: coupon.code,
+        type: coupon.type,
+        value: coupon.value,
+        discountAmount: discount,
+      };
+    }
+
+    // =========================
+    // 3️⃣ FINAL TOTAL
+    // =========================
+
+    const total = Math.max(subtotal - discount, 0);
+
+    // =========================
+    // 4️⃣ CREATE ORDER
+    // =========================
+
     const order = await Order.create({
       orderId: `ORD-${nanoid(10)}`,
       user: userId,
-      email: req.user?.email || "",
       name: name || req.user?.name || "",
       address,
       phone,
       notes,
-      total,
       items,
+      subtotal,
+      discount,
+      total,
+      coupon: couponSnapshot,
+      status: "pending",
     });
 
-    return res.status(200).json({
+    return res.status(201).json({
+      success: true,
       message: "Order created successfully",
       data: order,
-      success: true,
     });
   } catch (error) {
-    console.error("Create unified order error:", error);
+    console.error("❌ Create order error:", error);
     return res.status(500).json({
-      message: "Something went wrong while creating order",
-      error: true,
       success: false,
+      message: "Order creation failed",
     });
   }
 };

@@ -87,12 +87,7 @@ export const initiatePayHerePayment = async (req, res) => {
 
 // -------------------- PayHere Webhook --------------------
 export const handlePayHereNotification = async (req, res) => {
-  console.log("PayHere notification received:", req.body);  
-
-  if (!req.body || Object.keys(req.body).length === 0) {
-    console.error("❌ Empty body received");
-    return res.sendStatus(400);
-  }
+  console.log("🔔 PayHere notification:", req.body);
 
   try {
     const {
@@ -101,13 +96,17 @@ export const handlePayHereNotification = async (req, res) => {
       payhere_amount,
       payhere_currency,
       status_code,
-      md5sig
+      md5sig,
     } = req.body;
+
+    if (!order_id || !md5sig) return res.sendStatus(400);
 
     const order = await Order.findOne({ orderId: order_id });
     if (!order) return res.sendStatus(404);
 
-    // Verify MD5 signature
+    // =========================
+    // 1️⃣ VERIFY SIGNATURE
+    // =========================
     const secretHash = crypto
       .createHash("md5")
       .update(process.env.PAYHERE_SANDBOX_SECRET)
@@ -118,49 +117,63 @@ export const handlePayHereNotification = async (req, res) => {
       .createHash("md5")
       .update(
         merchant_id +
-        order_id +
-        payhere_amount +
-        payhere_currency +
-        status_code +
-        secretHash
+          order_id +
+          payhere_amount +
+          payhere_currency +
+          status_code +
+          secretHash
       )
       .digest("hex")
       .toUpperCase();
 
     if (localMd5 !== md5sig) {
       console.error("❌ MD5 mismatch");
-      console.log("Expected:", localMd5);
-      console.log("Received:", md5sig);
       return res.sendStatus(400);
     }
 
-    // Update order status
-    switch (status_code) {
-      case "2":
-        order.status = "paid";
-        await sendInvoiceMail(order.user, order);
-        break;
-      case "0":
-        order.status = "pending";
-        break;
-      case "-1":
-        order.status = "cancelled";
-        break;
-      case "-2":
-        order.status = "failed";
-        break;
-      case "-3":
-        order.status = "refunded";
-        break;
-      default:
-        order.status = "failed";
+    // =========================
+    // 2️⃣ SUCCESS PAYMENT
+    // =========================
+    if (status_code === "2") {
+      // 🛑 IDPOTENCY CHECK
+      if (order.status === "paid") {
+        console.log("⚠️ Order already paid, ignoring duplicate webhook");
+        return res.sendStatus(200);
+      }
+
+      // 2.1 Mark order as paid
+      order.status = "paid";
+      await order.save();
+
+      // 2.2 Lock coupon usage ONCE
+      if (order.coupon?.code) {
+        const coupon = await Coupon.findOne({ code: order.coupon.code });
+
+        if (coupon && !coupon.usersUsed.includes(order.user)) {
+          coupon.usedCount += 1;
+          coupon.usersUsed.push(order.user);
+          await coupon.save();
+        }
+      }
+
+      // 2.3 Send invoice email ONCE
+      await sendInvoiceMail(order.user, order);
+
+      return res.sendStatus(200);
     }
+
+    // =========================
+    // 3️⃣ OTHER STATUSES
+    // =========================
+    if (status_code === "0") order.status = "pending";
+    else if (status_code === "-1") order.status = "cancelled";
+    else if (status_code === "-2") order.status = "failed";
+    else if (status_code === "-3") order.status = "refunded";
 
     await order.save();
     return res.sendStatus(200);
-
-  } catch (err) {
-    console.error("❌ Notify error:", err);
+  } catch (error) {
+    console.error("❌ Webhook error:", error);
     return res.sendStatus(500);
   }
 };

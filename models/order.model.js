@@ -22,6 +22,20 @@ const orderSchema = new mongoose.Schema(
     },
     phone: String,
     notes: String,
+    subtotal: {
+      type: Number,
+      required: true,
+    },
+
+    discount: {
+      type: Number,
+      default: 0,
+    },
+    coupon: {
+      code: String,
+      discountPercent: Number,
+      discountAmount: Number,
+    },
     total: {
       type: Number,
       required: true
