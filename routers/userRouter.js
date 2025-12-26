@@ -1,6 +1,7 @@
 import express from 'express'
-import { forgotPassword, getUserData, googleLogin, loginUser, logoutUser, registerUsers, resetPassword, updateUsers, verfiyEmail, verifyForgotPasswordOtp } from '../controllers/userController.js';
+import { forgotPassword, getAllUsers, getUserData, googleLogin, loginUser, logoutUser, registerUsers, resetPassword, updateUsers, verfiyEmail, verifyForgotPasswordOtp } from '../controllers/userController.js';
 import auth from '../middleweare/auth.js';
+import admin from '../middleweare/admin.js';
 
 const userRouter=express.Router();
 
@@ -33,6 +34,10 @@ userRouter.put('/update-profile',auth,updateUsers);
 
 //reset password
 userRouter.put('/reset-password',resetPassword);
+
+//get all users
+userRouter.get('/allusers',auth,admin,getAllUsers)
+
 
 
 

@@ -717,3 +717,25 @@ export const updateUsers = async (requset, response) => {
     });
   }
 };
+
+//get all user
+export const getAllUsers = async(request,response)=>{
+  try {
+    const user =await UserModel.find()
+
+    return response.status(200).json({
+      data:user,
+      error:false,
+      success:true,
+      message:'Fetch all Users'
+    })
+    
+  } catch (error) {
+    console.error("Update user error:", error);
+    return response.status(500).json({
+      message: "Something went wrong during update",
+      error: true,
+      success: false,
+    });
+  }
+}
