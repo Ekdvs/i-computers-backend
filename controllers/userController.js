@@ -4,7 +4,8 @@ import generatedAccesToken from "../utill/generatedAccesToken.js";
 import generatedRefreshToken from "../utill/generatedRefreshToken.js";
 import axios from "axios";
 import generatedOtp from "../utill/genarateOtp.js";
-import { sendOtpMail } from "../services/email/mailtemplate/sendMail.js";
+import { sendOtpMail, sendWelcomeOffer } from "../services/email/mailtemplate/sendMail.js";
+import Coupon from "../models/coupon.model.js";
 
 // Use same config for login & logout
 const cookieOptions = {
@@ -54,6 +55,11 @@ export const registerUsers=async(request,response)=>{
         //send email verifylink
         const verifyurl=`${process.env.FRONTEND_URL}/verify-email?code=${newUser?._id}`;
         await sendWelcomeMail(newUser,verifyurl);
+        const coupon = await Coupon.findOne({ code: "WELCOME20" });
+    
+        if (!coupon) return;
+
+        await sendWelcomeOffer(newUser , coupon);
 
         return response.status(201).json({
             message:'User Registered Successfully',
@@ -440,8 +446,14 @@ export const googleLogin = async (req, res) => {
         email,
         avatar: picture,
         password: "GoogleOAuth", 
-        provider: "google"
+        provider: "google",
+        last_lagin_date:Date.now()
       });
+      const coupon = await Coupon.findOne({ code: "WELCOME20" });
+    
+        if (!coupon) return;
+
+        await sendWelcomeOffer(user , coupon);
     }
 
     // 4️⃣ Generate tokens

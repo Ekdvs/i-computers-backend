@@ -220,3 +220,43 @@ export const couponEmailTemplate = (userName, coupon) => {
 </html>
   `;
 };
+
+// Coupon email template for welcome offer
+export const welcomeCouponEmailTemplate = (userName, coupon) => {
+  // Determine discount text
+  const discountText =
+    coupon.type === "PERCENT"
+      ? `${coupon.value}% off`
+      : `LKR ${coupon.value} off`;
+
+  // Format expiry date
+  const expiry = coupon.expiryDate
+    ? new Date(coupon.expiryDate).toLocaleDateString()
+    : "N/A";
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Welcome to Our Store!</title>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f0f2f5;">
+  <div style="max-width:600px; margin:40px auto; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+    ${typeof generateEmailHeader === "function" ? generateEmailHeader() : ""}
+    <div style="padding:30px 20px; text-align:center; color:#333;">
+      <h1 style="color:#007BFF; margin-bottom:20px;">Welcome to Our Store!</h1>
+      <p>Hello <strong>${userName}</strong>,</p>
+      <p>As a token of our appreciation, here’s a special welcome coupon just for you:</p>
+      <h2 style="font-size:28px; color:#FF5733; margin:20px 0;">${coupon.code}</h2>
+      <p>Enjoy <strong>${discountText}</strong> on your first purchase.</p>
+      <p>Hurry! Expires on: <strong>${expiry}</strong></p>
+      <a href="${process.env.FRONTEND_URL}" style="display:inline-block; margin-top:25px; padding:12px 25px; background-color:#007BFF; color:#fff; text-decoration:none; border-radius:50px; font-weight:bold;">Start Shopping</a>
+    </div>
+    ${typeof generateEmailFooter === "function" ? generateEmailFooter() : ""}
+  </div>
+</body>
+</html>
+  `;
+};

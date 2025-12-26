@@ -69,3 +69,17 @@ export const sendCoupon = async (emailList, username, coupon) => {
   }
 };
 
+export const sendWelcomeOffer = async (newUser, coupon) => {
+  try {
+    await  transporter.sendMail({
+      from: `"Online Shopping" <${process.env.EMAIL_USER}>`,
+      to: newUser.email,
+      subject: "We have a special coupon just for you!",
+      html: couponEmailTemplate(newUser.name, coupon), // 🔥 Import template
+    });
+    console.log("✅ coupon email sent successfully!");
+  } catch (err) {
+    console.error("❌ Failed to send email:", err);
+  }
+};
+
