@@ -305,7 +305,8 @@ export const logoutUser=async(request,response)=>{
 //delete account
 export const deleteUser=async(request,response)=>{
     try {
-        const userId=request.userId;
+        const userId=request.params.id;
+        
 
         //check user id
         if(!userId){
@@ -349,60 +350,55 @@ export const deleteUser=async(request,response)=>{
 }
 
 //admin can user status change active or inactive
-export const chageUserStatus=async(request,response)=>{
-    try {
-        
-        const {status,userId}=request.body;
-        //validate input
-        if (!userId || !status) {
-            return response.status(400).json({
-                message: "User ID and status are required",
-                error: true,
-                success: false,
-            });
-        }
+export const changeUserStatus = async (request, response) => {
+  try {
+    const userId = request.params.id;
+    //console.log("User ID:", userId);
 
-        // Allow only specific statuses
-        if (!["ACTIVE", "INACTIVE"].includes(status)) {
-            return response.status(400).json({
-                message: "Invalid status value. Use 'ACTIVE' or 'INACTIVE'.",
-                error: true,
-                success: false,
-            });
-        }
-
-        // Update user status
-        const updatedUser = await UserModel.findByIdAndUpdate(
-        userId,
-        { status },
-        { new: true }
-        );
-
-        //update user data base
-        if (!updatedUser) {
-        return response.status(404).json({
-            message: "User not found",
-            error: true,
-            success: false,
-        });
-        }
-
-        return res.status(200).json({
-            message: `User status changed to ${status}`,
-            data: updatedUser,
-            error: false,
-            success: true,
-        });
-        
-    } catch (error) {
-        console.error("Change user status error:", error.message);
-        return response.status(500).json({
-            message: "Something went wrong while changing user status",
-            error: true,
-            success: false,
-        });
+    // Validate input
+    if (!userId) {
+      return response.status(400).json({
+        message: "User ID is required",
+        error: true,
+        success: false,
+      });
     }
-}
+
+    // ✅ MUST use await
+    const user = await UserModel.findById(userId);
+    //console.log("User:", user);
+
+    if (!user) {
+      return response.status(404).json({
+        message: "User not found",
+        error: true,
+        success: false,
+      });
+    }
+
+    // Toggle role
+    user.role = user.role === "ADMIN" ? "USER" : "ADMIN";
+
+    // ✅ Works because user is a Mongoose document
+    await user.save();
+
+    return response.status(200).json({
+      message: `User role changed to ${user.role}`,
+      data: user,
+      error: false,
+      success: true,
+    });
+
+  } catch (error) {
+    console.error("Change user status error:", error);
+    return response.status(500).json({
+      message: "Something went wrong while changing user status",
+      error: true,
+      success: false,
+    });
+  }
+};
+
 
 //google login
 export const googleLogin = async (req, res) => {
