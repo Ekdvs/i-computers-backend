@@ -9,7 +9,7 @@ import Coupon from "../models/coupon.model.js";
 export const createOrder = async (req, res) => {
   try {
     const userId = req.userId;
-    const { items, address, phone, couponCode } = req.body;
+    const { items, address, phone, couponCode,name ,shippingCost = 100 } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, message: "No items to order" });
@@ -66,7 +66,7 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    const total = Math.max(subtotal - discount, 0);
+    const total = Math.max(subtotal - discount+ shippingCost, 0);
 
     const order = await Order.create({
       orderId: `ORD-${nanoid(10)}`,
@@ -76,7 +76,9 @@ export const createOrder = async (req, res) => {
       phone,
       subtotal,
       discount,
+      shippingCost,
       total,
+      name,
       coupon: couponSnapshot,
       paymentStatus: "pending",
       paymentMethod: "PAYHERE",
@@ -160,7 +162,7 @@ export const getOrderById = async(request,response)=>{
 //get all orders for admin
 export const getAllOdres =async(request,response)=>{
     try {
-        const orders=await Order.find().populate("user","name email").sort({createdAt:1});
+        const orders=await Order.find().populate("user","name email").sort({createdAt:-1});
 
         if(!orders||orders.length===0){
             return response.status(404).json({

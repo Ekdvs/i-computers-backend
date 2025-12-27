@@ -1,4 +1,4 @@
-
+import fs from "fs";
 import { generateInvoicePDF } from "../../../utill/invoicePdf.js";
 import transporter from "../mailer.js";
 import { couponEmailTemplate, invoiceEmailTemplate, otpEmailTemplate, welcomeEmailTemplate } from "./mails.js";
@@ -34,26 +34,37 @@ export const sendOtpMail =async(user,otp)=>{
 }
 
 //send invoice mails
-export const sendInvoiceMail =async(user,order)=>{
-    try {
-        const pdfPath = await generateInvoicePDF(order);
-        await transporter.sendMail({
-            from:`"I Computers Shop" <${process.env.EMAIL_USER}>`,
-            to: user.email,
-            subject: `Invoice - ${order.orderId}`,
-            html: invoiceEmailTemplate(user, order),
-            attachments: [
-                {
-                    filename: `${order.orderId}.pdf`,
-                    path: pdfPath,
-                },
-            ],
-        })
-        
-    } catch (error) {
-        console.error("❌ Failed to send email:", error);
-    }
-}
+export const sendInvoiceMail = async (user, order) => {
+  try {
+    // 1️⃣ Generate PDF
+    const pdfPath = await generateInvoicePDF(order);
+
+    // 2️⃣ Send email with PDF attachment
+    await transporter.sendMail({
+      from: `"I Computers Shop" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: `Invoice - ${order.orderId}`,
+      html: invoiceEmailTemplate(user, order),
+      attachments: [
+        {
+          filename: `${order.orderId}.pdf`,
+          path: pdfPath,
+        },
+      ],
+    });
+
+    console.log(`✅ Invoice sent to ${user.email}`);
+
+    // 3️⃣ Delete the PDF after sending
+    fs.unlink(pdfPath, (err) => {
+      if (err) console.error("❌ Failed to delete PDF:", err);
+      else console.log(`🗑️ Deleted PDF: ${pdfPath}`);
+    });
+
+  } catch (error) {
+    console.error("❌ Failed to send invoice email:", error);
+  }
+};
 
 export const sendCoupon = async (emailList, username, coupon) => {
   try {

@@ -93,7 +93,7 @@ export const generateInvoicePDF = (order) => {
     currentY += 18;
     doc.font('Helvetica')
        .fillColor(colors.secondary)
-       .text(order.email || 'N/A', rightCol, currentY);
+       .text(order.name || 'N/A', rightCol, currentY);
     
     currentY += 15;
     doc.text(order.phone, rightCol, currentY);
