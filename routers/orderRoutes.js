@@ -13,8 +13,8 @@ orderRouter.get("/get/:id",getOrderById);
 
 
 // Admin
-orderRouter.get("/", auth, admin, getAllOdres);
-orderRouter.put("/:id/status", auth, admin, updateOrderStatus);
+orderRouter.get("/getall", auth, admin, getAllOdres);
+orderRouter.put("/status/:id", auth, admin, updateOrderStatus);
 orderRouter.get('/finance-summary',auth,admin,getFinanceSummary);
 orderRouter.get('/monthly-sales',auth,admin,getMonthlySalesReport);
 

@@ -16,7 +16,7 @@ ratingRouter.get('/getall/:productId',getReviews)
 ratingRouter.put('/update/:reviewId',auth,updateReview)
 
 //delete rating 
-ratingRouter.delete("/:reviewId", auth,admin, deleteReview); 
+ratingRouter.delete("/delete/:reviewId", auth,admin, deleteReview); 
 
 //get all reviews for admin
 ratingRouter.get("/admin/getall", auth, admin, getAllReviews);

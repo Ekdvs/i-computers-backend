@@ -48,6 +48,7 @@ export const addReview = async (request, response) => {
       name: user.name,
       rating: Number(rating),
       comment: comment.trim(),
+      
     });
 
     // ✅ RECALCULATE RATINGS
@@ -174,12 +175,12 @@ export const updateReview = async (requset, response) => {
 // Delete Review (User or Admin)
 export const deleteReview = async (requset, response) => {
   try {
-    const { reviewId } = requset.params;
-    const userId = requset.userId;
-    const isAdmin = requset.isAdmin; // Assuming your auth middleware sets this
+    const reviewId  = requset.params.reviewId;
+     // Assuming your auth middleware sets this
 
     //find review from data base
     const review = await Review.findById(reviewId);
+    console.log(review)
     if (!review) {
       return response.status(404).json({ 
         message: "Review not found", 
@@ -187,12 +188,6 @@ export const deleteReview = async (requset, response) => {
       });
     }
 
-    if (!isAdmin && review.user.toString() !== userId.toString()) {
-      return response.status(403).json({ 
-        message: "Not authorized", 
-        success: false 
-      });
-    }
 
     //deleting from data base
     await Review.findByIdAndDelete(reviewId);
@@ -214,6 +209,7 @@ export const deleteReview = async (requset, response) => {
     });
   } 
   catch (error) {
+    console.log(error)
     response.status(500).json({
        message: "Server error", 
        error: error.message, 

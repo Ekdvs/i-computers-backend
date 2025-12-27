@@ -1,5 +1,5 @@
 import express from 'express'
-import { forgotPassword, getAllUsers, getUserData, googleLogin, loginUser, logoutUser, registerUsers, resetPassword, updateUsers, verfiyEmail, verifyForgotPasswordOtp } from '../controllers/userController.js';
+import {changeUserStatus, deleteUser, forgotPassword, getAllUsers, getUserData, googleLogin, loginUser, logoutUser, registerUsers, resetPassword, updateUsers, verfiyEmail, verifyForgotPasswordOtp } from '../controllers/userController.js';
 import auth from '../middleweare/auth.js';
 import admin from '../middleweare/admin.js';
 
@@ -37,6 +37,12 @@ userRouter.put('/reset-password',resetPassword);
 
 //get all users
 userRouter.get('/allusers',auth,admin,getAllUsers)
+
+//delete user
+userRouter.delete('/delete/:id',auth,admin,deleteUser)
+
+//chage role
+userRouter.put("/admin/:id",auth,admin,changeUserStatus)
 
 
 

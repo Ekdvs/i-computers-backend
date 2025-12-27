@@ -2,65 +2,71 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
-    orderId: {
-      type: String,
-      required: true,
-      unique: true
-    },
+    orderId: { type: String, required: true, unique: true },
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
-    },
-    name: {
-      type: String,
-      required: true
-    },
-    address: {
-      type: String,
-      required: true
-    },
-    phone: String,
-    notes: String,
-    subtotal: {
-      type: Number,
       required: true,
     },
 
-    discount: {
-      type: Number,
-      default: 0,
-    },
-    coupon: {
-      code: String,
-      discountPercent: Number,
-      discountAmount: Number,
-    },
-    total: {
-      type: Number,
-      required: true
-    },
-    status: {
-      type: String,
-      enum: ["pending", "paid", "processing", "shipped", "delivered", "cancelled"],
-      default: "pending"
-    },
-    paymentMethod: {
-      type: String,
-      default: "PAYHERE"
-    },
+    name: String,
+    address: String,
+    phone: String,
+    notes: String,
+
     items: [
       {
         productID: String,
         name: String,
         price: Number,
         quantity: Number,
-        image: String
-      }
-    ]
+        image: String,
+      },
+    ],
+
+    subtotal: Number,
+    discount: { type: Number, default: 0 },
+    total: Number,
+
+    coupon: {
+      code: String,
+      discountAmount: Number,
+    },
+
+    // 💰 PAYMENT
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed", "refunded"],
+      default: "pending",
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["PAYHERE", "COD", "CARD", "BANK"],
+      default: "PAYHERE",
+    },
+    paymentId: String,
+    paidAt: Date,
+
+    // 🚚 DELIVERY
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "out_for_delivery",
+        "delivered",
+        "cancelled",
+        "returned",
+      ],
+      default: "pending",
+    },
+
+    note: String,
   },
   { timestamps: true }
 );
 
-const Order = mongoose.model("Order", orderSchema);
-export default Order;
+export default mongoose.model("Order", orderSchema);

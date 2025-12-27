@@ -36,7 +36,7 @@ export const sendOtpMail =async(user,otp)=>{
 //send invoice mails
 export const sendInvoiceMail =async(user,order)=>{
     try {
-        const pdfPath = generateInvoicePDF(order);
+        const pdfPath = await generateInvoicePDF(order);
         await transporter.sendMail({
             from:`"I Computers Shop" <${process.env.EMAIL_USER}>`,
             to: user.email,
@@ -51,7 +51,7 @@ export const sendInvoiceMail =async(user,order)=>{
         })
         
     } catch (error) {
-        console.error("❌ Failed to send email:", err);
+        console.error("❌ Failed to send email:", error);
     }
 }
 

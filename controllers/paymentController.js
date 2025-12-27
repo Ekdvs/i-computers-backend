@@ -1,6 +1,7 @@
 import Order from "../models/order.model.js";
 import crypto from "crypto";
 import { sendInvoiceMail } from "../services/email/mailtemplate/sendMail.js";
+import UserModel from "../models/user.model.js";
 
 // Generate PayHere hash for payment initiation
 export const generatePayHereHash = (
@@ -59,7 +60,7 @@ export const initiatePayHerePayment = async (req, res) => {
       merchant_id: process.env.PAYHERE_SANDBOX_MERCHANT_ID,
       return_url: "http://localhost:5173/payment-success",
       cancel_url: "http://localhost:5173/payment-cancel",
-      notify_url: "http://localhost:8080/api/payment/payhere/notify",
+      notify_url: "https://cleanlier-verisimilarly-portia.ngrok-free.dev/api/payment/payhere/notify",
 
       order_id: order.orderId, 
       items: order.items.map(i => i.name).join(", "),
@@ -87,9 +88,8 @@ export const initiatePayHerePayment = async (req, res) => {
 
 // -------------------- PayHere Webhook --------------------
 export const handlePayHereNotification = async (req, res) => {
-  console.log("🔔 PayHere notification:", req.body);
-
   try {
+    console.log("🔥 PAYHERE WEBHOOK HIT");
     const {
       merchant_id,
       order_id,
@@ -99,21 +99,17 @@ export const handlePayHereNotification = async (req, res) => {
       md5sig,
     } = req.body;
 
-    if (!order_id || !md5sig) return res.sendStatus(400);
-
     const order = await Order.findOne({ orderId: order_id });
     if (!order) return res.sendStatus(404);
 
-    // =========================
-    // 1️⃣ VERIFY SIGNATURE
-    // =========================
+    // VERIFY HASH
     const secretHash = crypto
       .createHash("md5")
       .update(process.env.PAYHERE_SANDBOX_SECRET)
       .digest("hex")
       .toUpperCase();
 
-    const localMd5 = crypto
+    const localHash = crypto
       .createHash("md5")
       .update(
         merchant_id +
@@ -126,55 +122,55 @@ export const handlePayHereNotification = async (req, res) => {
       .digest("hex")
       .toUpperCase();
 
-    if (localMd5 !== md5sig) {
-      console.error("❌ MD5 mismatch");
-      return res.sendStatus(400);
-    }
+    if (localHash !== md5sig) return res.sendStatus(400);
 
-    // =========================
-    // 2️⃣ SUCCESS PAYMENT
-    // =========================
+    // ✅ SUCCESS
     if (status_code === "2") {
-      // 🛑 IDPOTENCY CHECK
-      if (order.status === "paid") {
-        console.log("⚠️ Order already paid, ignoring duplicate webhook");
-        return res.sendStatus(200);
-      }
+      if (order.paymentStatus === "paid") return res.sendStatus(200);
 
-      // 2.1 Mark order as paid
-      order.status = "paid";
+      order.paymentStatus = "paid";
+      order.status = "confirmed";
+      order.paidAt = new Date();
+      order.paymentId = md5sig;
+
       await order.save();
 
-      // 2.2 Lock coupon usage ONCE
+      // LOCK COUPON
       if (order.coupon?.code) {
-        const coupon = await Coupon.findOne({ code: order.coupon.code });
-
-        if (coupon && !coupon.usersUsed.includes(order.user)) {
-          coupon.usedCount += 1;
-          coupon.usersUsed.push(order.user);
-          await coupon.save();
-        }
+        await Coupon.findOneAndUpdate(
+          { code: order.coupon.code },
+          {
+            $inc: { usedCount: 1 },
+            $push: { usersUsed: order.user },
+          }
+        );
       }
+      
+      const userId=order.user
+      console.log('user id',userId)
 
-      // 2.3 Send invoice email ONCE
-      await sendInvoiceMail(order.user, order);
-
+      const user = await UserModel.findById(userId)
+      console.log("user",user.email)
+      await sendInvoiceMail(user, order);
       return res.sendStatus(200);
     }
 
-    // =========================
-    // 3️⃣ OTHER STATUSES
-    // =========================
-    if (status_code === "0") order.status = "pending";
-    else if (status_code === "-1") order.status = "cancelled";
-    else if (status_code === "-2") order.status = "failed";
-    else if (status_code === "-3") order.status = "refunded";
+    // ❌ FAILED
+    if (status_code === "-1") {
+      order.paymentStatus = "failed";
+      order.status = "cancelled";
+    }
+
+    if (status_code === "-3") {
+      order.paymentStatus = "refunded";
+    }
 
     await order.save();
-    return res.sendStatus(200);
-  } catch (error) {
-    console.error("❌ Webhook error:", error);
-    return res.sendStatus(500);
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("Webhook error:", err);
+    res.sendStatus(500);
   }
 };
+
 

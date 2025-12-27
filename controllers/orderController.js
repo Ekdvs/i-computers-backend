@@ -167,7 +167,7 @@ export const createOrder = async (req, res) => {
     const order = await Order.create({
       orderId: `ORD-${nanoid(10)}`,
       user: userId,
-      name: name || req.user?.name || "",
+      name,
       address,
       phone,
       notes,
@@ -176,8 +176,13 @@ export const createOrder = async (req, res) => {
       discount,
       total,
       coupon: couponSnapshot,
+
+      paymentStatus: "pending",
+      paymentMethod: couponCode ? "PAYHERE" : "COD",
+
       status: "pending",
     });
+
 
     return res.status(201).json({
       success: true,
@@ -260,7 +265,7 @@ export const getOrderById = async(request,response)=>{
 //get all orders for admin
 export const getAllOdres =async(request,response)=>{
     try {
-        const orders=await Order.find().populate("user","name email").sort({createdAt:-1});
+        const orders=await Order.find().populate("user","name email").sort({createdAt:1});
 
         if(!orders||orders.length===0){
             return response.status(404).json({
@@ -286,74 +291,59 @@ export const getAllOdres =async(request,response)=>{
     }
 }
 
-//update order status
-export const updateOrderStatus =async(request,response)=>{
-    try {
-        const {id} = request.params;
-        const {status} = request.body;
+// update order status & note (ADMIN)
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, note } = req.body;
 
-        const order = await Order.findByIdAndUpdate(id, {status}, {new: true});
+    const update = {};
+    if (status) update.status = status;
+    if (note !== undefined) update.note = note;
 
-        if(!order){
-            return response.status(404).json({
-                message:"Order not found",
-                error:true,
-                success:false
-               }) 
-        }
+    const order = await Order.findByIdAndUpdate(id, update, {
+      new: true,
+    }).populate("user", "name email");
 
-        return response.status(200).json({
-            message:"Order status updated successfully",
-            data:order,
-            success:true,
-            error:false
-        });
-
-    } catch (error) {
-         console.error("Update user error:", error);
-        return response.status(500).json({
-        message: "Something went wrong during update",
-        error: true,
-        success: false,
-        });
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
     }
-}
+
+    res.json({
+      success: true,
+      message: "Order updated",
+      data: order,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Update failed" });
+  }
+};
+
+
 
 //finace summary
-export const getFinanceSummary = async(request,response)=>{
-    try {
-        const totalRevenue= await Order.aggregate([
-            {
-                $match:{status:"Paid"}
-            },
-            {
-                $group:{
-                    _id:null,
-                    totalAmount:{$sum:"$total"}
-                }
-            }
-        ]);
+export const getFinanceSummary = async (req, res) => {
+  const totalRevenue = await Order.aggregate([
+    { $match: { paymentStatus: "paid" } },
+    { $group: { _id: null, total: { $sum: "$total" } } },
+  ]);
 
-        const totalOrders = await Order.countDocuments();
-        const paidOrders = await Order.countDocuments({ status: "paid" });
-        const pendingOrders = await Order.countDocuments({ status: "pending" });
+  const totalOrders = await Order.countDocuments();
+  const paidOrders = await Order.countDocuments({ paymentStatus: "paid" });
+  const pendingOrders = await Order.countDocuments({ paymentStatus: "pending" });
 
-        return response.status(200).json({
-            message:"Finance summary fetched successfully",
-            data:{totalRevenue, totalOrders, paidOrders, pendingOrders},
-            success:true,
-            error:false
-        });
+  res.json({
+    success: true,
+    data: {
+      totalRevenue: totalRevenue[0]?.total || 0,
+      totalOrders,
+      paidOrders,
+      pendingOrders,
+    },
+  });
+};
 
-    } catch (error) {
-        console.error("getFinanceSummary error:", error);
-        return response.status(500).json({
-        message: "Something went wrong during update",
-        error: true,
-        success: false,
-        });
-    }
-}
 
 //monthly sales report
 export const getMonthlySalesReport = async(request,response)=>{
