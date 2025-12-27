@@ -9,91 +9,34 @@ import Coupon from "../models/coupon.model.js";
 export const createOrder = async (req, res) => {
   try {
     const userId = req.userId;
-    const {
-      productId,
-      quantity,
-      address,
-      phone,
-      notes,
-      name,
-      couponCode,
-    } = req.body;
+    const { items, address, phone, couponCode } = req.body;
 
-    let items = [];
+    if (!items || items.length === 0) {
+      return res.status(400).json({ success: false, message: "No items to order" });
+    }
+
     let subtotal = 0;
+    const orderItems = [];
 
-    // =========================
-    // 1️⃣ BUILD ITEMS + SUBTOTAL
-    // =========================
+    for (const item of items) {
+      const product = await Product.findById(item._id);
+      if (!product || product.stock < item.quantity)
+        return res.status(400).json({ success: false, message: `${item.name} out of stock` });
 
-    if (productId && quantity) {
-      // BUY NOW
-      const product = await Product.findById(productId);
+      subtotal += product.price * item.quantity;
 
-      if (!product || product.stock < quantity) {
-        return res.status(400).json({
-          success: false,
-          message: "Product unavailable or insufficient stock",
-        });
-      }
-
-      subtotal = product.price * quantity;
-
-      items.push({
+      orderItems.push({
         productID: product._id,
         name: product.name,
         price: product.price,
-        quantity,
+        quantity: item.quantity,
         image: product.image?.[0] || "",
       });
 
-      await Product.findByIdAndUpdate(productId, {
-        $inc: { stock: -quantity },
-      });
-    } else {
-      // CART CHECKOUT
-      const cart = await Cart.findOne({ user: userId }).populate(
-        "items.product",
-        "name price image stock"
-      );
-
-      if (!cart || cart.items.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Cart is empty",
-        });
-      }
-
-      for (const item of cart.items) {
-        if (item.product.stock < item.quantity) {
-          return res.status(400).json({
-            success: false,
-            message: `${item.product.name} out of stock`,
-          });
-        }
-
-        subtotal += item.product.price * item.quantity;
-
-        items.push({
-          productID: item.product._id,
-          name: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity,
-          image: item.product.image?.[0] || "",
-        });
-
-        await Product.findByIdAndUpdate(item.product._id, {
-          $inc: { stock: -item.quantity },
-        });
-      }
-
-      await Cart.findOneAndDelete({ user: userId });
+      await Product.findByIdAndUpdate(product._id, { $inc: { stock: -item.quantity } });
     }
 
-    // =========================
-    // 2️⃣ APPLY COUPON
-    // =========================
-
+    // Apply coupon
     let discount = 0;
     let couponSnapshot = null;
 
@@ -104,97 +47,49 @@ export const createOrder = async (req, res) => {
         expiryDate: { $gte: new Date() },
       });
 
-      if (!coupon) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid or expired coupon",
-        });
+      if (coupon && (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) && !coupon.usersUsed.includes(userId)) {
+        if (subtotal >= coupon.minOrderAmount) {
+          discount = coupon.type === "PERCENT" ? (subtotal * coupon.value) / 100 : coupon.value;
+          discount = Math.min(discount, subtotal);
+
+          coupon.usedCount = (coupon.usedCount || 0) + 1;
+          coupon.usersUsed.push(userId);
+          await coupon.save();
+
+          couponSnapshot = {
+            code: coupon.code,
+            type: coupon.type,
+            value: coupon.value,
+            discountAmount: discount,
+          };
+        }
       }
-
-      if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
-        return res.status(400).json({
-          success: false,
-          message: "Coupon usage limit reached",
-        });
-      }
-
-      if (coupon.usersUsed.includes(userId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Coupon already used by you",
-        });
-      }
-
-      // ✅ Minimum order amount check
-      if (subtotal < coupon.minOrderAmount) {
-        return res.status(400).json({
-          success: false,
-          message: `Minimum order LKR ${coupon.minOrderAmount} required`,
-        });
-      }
-
-      // ✅ Calculate discount
-      if (coupon.type === "PERCENT") {
-        discount = (subtotal * coupon.value) / 100;
-      }
-
-      if (coupon.type === "FLAT") {
-        discount = coupon.value;
-      }
-
-      // ✅ Never exceed subtotal
-      discount = Math.min(discount, subtotal);
-
-      // Snapshot saved inside order
-      couponSnapshot = {
-        code: coupon.code,
-        type: coupon.type,
-        value: coupon.value,
-        discountAmount: discount,
-      };
     }
 
-    // =========================
-    // 3️⃣ FINAL TOTAL
-    // =========================
-
     const total = Math.max(subtotal - discount, 0);
-
-    // =========================
-    // 4️⃣ CREATE ORDER
-    // =========================
 
     const order = await Order.create({
       orderId: `ORD-${nanoid(10)}`,
       user: userId,
-      name,
+      items: orderItems,
       address,
       phone,
-      notes,
-      items,
       subtotal,
       discount,
       total,
       coupon: couponSnapshot,
-
       paymentStatus: "pending",
-      paymentMethod: couponCode ? "PAYHERE" : "COD",
-
+      paymentMethod: "PAYHERE",
       status: "pending",
     });
 
+    // Clear cart if checkout from cart
+    await Cart.findOneAndDelete({ user: userId });
 
-    return res.status(201).json({
-      success: true,
-      message: "Order created successfully",
-      data: order,
-    });
+    return res.status(201).json({ success: true, data: order, message: "Order created" });
   } catch (error) {
     console.error("❌ Create order error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Order creation failed",
-    });
+    return res.status(500).json({ success: false, message: "Order creation failed" });
   }
 };
 
