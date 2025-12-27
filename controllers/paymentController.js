@@ -58,8 +58,8 @@ export const initiatePayHerePayment = async (req, res) => {
     const paymentData = {
       sandbox: true, // Sandbox mode
       merchant_id: process.env.PAYHERE_SANDBOX_MERCHANT_ID,
-      return_url: "http://localhost:5173/payment-success",
-      cancel_url: "http://localhost:5173/payment-cancel",
+      return_url: `${process.env.FRONTEND_URL}/payment-success`,
+      cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
       notify_url: "https://cleanlier-verisimilarly-portia.ngrok-free.dev/api/payment/payhere/notify",
 
       order_id: order.orderId, 
