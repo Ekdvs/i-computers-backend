@@ -13,7 +13,10 @@ const orderSchema = new mongoose.Schema(
     name: String,
     address: String,
     phone: String,
-    notes: String,
+    notes: {
+      type:String,
+      default:'Order placed successfully'
+    },
 
     items: [
       {
