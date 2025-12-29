@@ -441,10 +441,12 @@ export const googleLogin = async (req, res) => {
         name: name || "Google User",
         email,
         avatar: picture, 
+        password:'Provide Password',
         provider: "google",
         last_lagin_date:Date.now()
       });
       const coupon = await Coupon.findOne({ code: "WELCOME20" });
+      
     
         if (!coupon) return;
 
