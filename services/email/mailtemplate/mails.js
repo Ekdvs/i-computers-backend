@@ -260,3 +260,36 @@ export const welcomeCouponEmailTemplate = (userName, coupon) => {
 </html>
   `;
 };
+
+// Reply Email Template
+export const replyEmailTemplate = (name, reply) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Your Message Reply from I Computers Shop</title>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f4f4f7;">
+  <div style="max-width:600px; margin:40px auto; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+    ${generateEmailHeader()}
+    
+    <div style="padding:30px 20px; color:#333;">
+      <h1 style="color:#007BFF; margin-bottom:15px;">Hello, ${name}!</h1>
+      <p>We’ve replied to your recent message submitted via our Contact Us form.</p>
+      
+      <div style="margin:20px 0; padding:20px; background:#f0f2f5; border-left:5px solid #007BFF; border-radius:5px;">
+        ${reply}
+      </div>
+
+      <p>If you have any further questions, feel free to reply back or contact our support team.</p>
+      
+      <p style="margin-top:25px;">Thank you,<br/>
+      <strong>I Computers Shop Team</strong></p>
+    </div>
+
+    ${generateEmailFooter()}
+  </div>
+</body>
+</html>
+`;

@@ -1,7 +1,7 @@
 import fs from "fs";
 import { generateInvoicePDF } from "../../../utill/invoicePdf.js";
 import transporter from "../mailer.js";
-import { couponEmailTemplate, invoiceEmailTemplate, otpEmailTemplate, welcomeEmailTemplate } from "./mails.js";
+import { couponEmailTemplate, invoiceEmailTemplate, otpEmailTemplate, replyEmailTemplate, welcomeEmailTemplate } from "./mails.js";
 
 //send welcome mails
 export const sendWelcomeMail =async(user,verifyurl)=>{
@@ -87,6 +87,20 @@ export const sendWelcomeOffer = async (newUser, coupon) => {
       to: newUser.email,
       subject: "We have a special coupon just for you!",
       html: couponEmailTemplate(newUser.name, coupon), // 🔥 Import template
+    });
+    console.log("✅ coupon email sent successfully!");
+  } catch (err) {
+    console.error("❌ Failed to send email:", err);
+  }
+};
+
+export const sendReplyMail = async (email, subject, reply,name) => {
+  try {
+    await  transporter.sendMail({
+      from: `"Online Shopping" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: `to ${subject}`,
+      html: replyEmailTemplate(name,reply), // 🔥 Import template
     });
     console.log("✅ coupon email sent successfully!");
   } catch (err) {

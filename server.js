@@ -9,6 +9,7 @@ import ratingRouter from "./routers/ratingRouter.js";
 import orderRouter from "./routers/orderRoutes.js";
 import paymentRoutes from "./routers/paymentRoutes.js";
 import couponRouter from "./routers/couponRouter.js";
+import contactRouter from "./routers/contactRouter.js";
 
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.use('/api/rating',ratingRouter)
 app.use('/api/order',orderRouter)
 app.use('/api/payment',paymentRoutes)
 app.use("/api/coupon", couponRouter);
+app.use('/api/contact',contactRouter)
 
 app.get("/", (req, res) => {
   res.send("Server is running!");
