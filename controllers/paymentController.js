@@ -60,7 +60,7 @@ export const initiatePayHerePayment = async (req, res) => {
       merchant_id: process.env.PAYHERE_SANDBOX_MERCHANT_ID,
       return_url: `${process.env.FRONTEND_URL}/payment-success`,
       cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
-      notify_url: `${process.env.BACKEND_URL}/api/payment/payhere/notify`,
+      notify_url: `https://cleanlier-verisimilarly-portia.ngrok-free.dev/api/payment/payhere/notify`,
 
       order_id: order.orderId, 
       items: order.items.map(i => i.name).join(", "),

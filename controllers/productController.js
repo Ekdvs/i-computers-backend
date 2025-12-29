@@ -64,8 +64,9 @@ export const getAllProducts = async(request,response)=>{
 //delete product by id
 export const deleteProductById = async(request,response)=>{
     try {
+        
 
-        const productId=request.params.id;
+        const productId=request.params.productId;
 
         if(!productId){
             return response.status(400).json({
@@ -76,6 +77,8 @@ export const deleteProductById = async(request,response)=>{
         }
 
         const deletedProduct=await Product.findByIdAndDelete(productId);
+
+        console.log("444444444444",deletedProduct)
 
         if(!deletedProduct){
             return response.status(404).json({
@@ -105,7 +108,7 @@ export const deleteProductById = async(request,response)=>{
 //update product by id
 export const updateproductById =async (request,response)=>{
     try {
-        const productId=request.params.id;
+        const productId=request.params.productId;
         const updateData=request.body;
 
         if(!productId){

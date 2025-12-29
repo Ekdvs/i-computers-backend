@@ -6,8 +6,8 @@ import auth from '../middleweare/auth.js';
 const productRouter = express.Router();
 productRouter.get('/getall',getAllProducts);
 productRouter.post('/createProduct',auth,admin,createProduct);
-productRouter.put('/updateProduct/:productId',admin,updateproductById);
-productRouter.delete('/deleteProduct/:productId',admin,deleteProductById);
+productRouter.put('/updateProduct/:productId',auth,admin,updateproductById);
+productRouter.delete('/deleteProduct/:productId',auth,admin,deleteProductById);
 productRouter.get('/getById/:productId',getProductById);
 productRouter.get('/search',searchProducts );
 

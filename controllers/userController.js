@@ -440,8 +440,7 @@ export const googleLogin = async (req, res) => {
       user = await UserModel.create({
         name: name || "Google User",
         email,
-        avatar: picture,
-        password: "GoogleOAuth", 
+        avatar: picture, 
         provider: "google",
         last_lagin_date:Date.now()
       });
