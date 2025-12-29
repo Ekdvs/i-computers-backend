@@ -24,7 +24,7 @@ export const generateEmailFooter = () => `
     font-size: 14px;
   ">
     &copy; ${new Date().getFullYear()} I Computers Shop. All rights reserved.<br/>
-    123 Your Street, Your City, Country
+    123 Main Street, Rathnapura, Sri Lanka
   </div>
 `;
 
