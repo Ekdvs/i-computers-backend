@@ -17,7 +17,7 @@ const app=express()
 
 app.use(
   cors({
-    origin: ["http://localhost:5173",process.env.DEV_URL,process.env.FRONTEND_URL,"https://i-computers-frontend-gamma.vercel.app","https://computer.ekdvs.xyz"], 
+    origin: ["http://localhost:5173",process.env.DEV_URL,process.env.FRONTEND_URL,"https://i-computers-frontend-gamma.vercel.app","https://computer.ekdvs.xyz","https://www.computer.ekdvs.xyz"], 
     credentials: true, })
 );
 
