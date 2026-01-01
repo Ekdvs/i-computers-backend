@@ -180,7 +180,7 @@ export const deleteReview = async (requset, response) => {
 
     //find review from data base
     const review = await Review.findById(reviewId);
-    console.log(review)
+    //console.log(review)
     if (!review) {
       return response.status(404).json({ 
         message: "Review not found", 

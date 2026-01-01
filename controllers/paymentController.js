@@ -148,10 +148,10 @@ export const handlePayHereNotification = async (req, res) => {
       }
       
       const userId=order.user
-      console.log('user id',userId)
+      //console.log('user id',userId)
 
       const user = await UserModel.findById(userId)
-      console.log("user",user.email)
+      //console.log("user",user.email)
       await sendInvoiceMail(user, order);
       return res.sendStatus(200);
     }

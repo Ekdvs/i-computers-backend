@@ -46,6 +46,25 @@ export const createCoupon = async (request, response) => {
       });
     }
 
+    /* ================= DUPLICATE CHECK ================= */
+    const upperCode = code.toUpperCase();
+
+    const existingCoupon = await Coupon.findOne({ code: upperCode });
+    if (existingCoupon) {
+      return response.status(409).json({
+        success: false,
+        message: "Coupon already exists. Use another code.",
+      });
+    }
+
+    if(existingCoupon){
+      return response.status(404).json({
+      success: false,
+      message: "Coupon Allready Created use Another Code",
+      data: coupon,
+    });
+    }
+
     const coupon = new Coupon({
       code: code.toUpperCase(),
       type,
@@ -80,7 +99,9 @@ export const createCoupon = async (request, response) => {
       data: coupon,
     });
   } catch (error) {
+    console.log(error)
     return response.status(500).json({
+      
       success: false,
       message: error.message,
     });

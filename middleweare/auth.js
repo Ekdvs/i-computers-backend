@@ -10,7 +10,7 @@ const auth = async (request, response, next) => {
         ? request.headers.authorization.split(" ")[1]
         : null);
 
-    console.log("🔍 Received Token:", token);
+    //console.log("🔍 Received Token:", token);
 
     if (!token) {
       return response.status(401).json({

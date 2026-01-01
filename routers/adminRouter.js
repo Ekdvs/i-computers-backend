@@ -5,13 +5,13 @@ import { getFinanceSummary, getMonthlySalesReport } from "../controllers/orderCo
 import { getDailyRevenue, getDashboardData, getLowStockProducts, getOrderStatusAnalytics, getPaymentMethods, getTopCustomers, getTopProducts } from "../controllers/adminController.js";
 
 const adminRouter=express.Router();
-adminRouter.get("/finance-summary", getFinanceSummary);
-adminRouter.get("/monthly-sales", getMonthlySalesReport);
-adminRouter.get("/order-status", getOrderStatusAnalytics);
-adminRouter.get("/low-stock", getLowStockProducts);
-adminRouter.get("/top-products", getTopProducts);
-adminRouter.get("/top-customers", getTopCustomers);
-adminRouter.get("/payment-methods", getPaymentMethods);
-adminRouter.get("/daily-revenue", getDailyRevenue);
+adminRouter.get("/finance-summary",auth,admin, getFinanceSummary);
+adminRouter.get("/monthly-sales",auth,admin,  getMonthlySalesReport);
+adminRouter.get("/order-status", auth,admin, getOrderStatusAnalytics);
+adminRouter.get("/low-stock", auth,admin, getLowStockProducts);
+adminRouter.get("/top-products", auth,admin, getTopProducts);
+adminRouter.get("/top-customers",auth,admin,  getTopCustomers);
+adminRouter.get("/payment-methods", auth,admin, getPaymentMethods);
+adminRouter.get("/daily-revenue", auth,admin, getDailyRevenue);
 adminRouter.get('/dashboard',auth,admin,getDashboardData)
 export default adminRouter;

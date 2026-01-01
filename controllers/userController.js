@@ -421,7 +421,7 @@ export const googleLogin = async (req, res) => {
         }
       }
     );
-    console.log(googleResponse.data);
+    //console.log(googleResponse.data);
 
     const { email, name, picture } = googleResponse.data;
 
@@ -456,7 +456,7 @@ export const googleLogin = async (req, res) => {
     // 4️⃣ Generate tokens
     const accessToken = generatedAccesToken(user);
     const refreshToken = generatedRefreshToken(user._id);
-    console.log("Generated Tokens:", { accessToken });
+    //console.log("Generated Tokens:", { accessToken });
 
     // 5️⃣ Store refresh token in cookie
     res.cookie("accessToken", accessToken, {
@@ -523,7 +523,7 @@ export const forgotPassword = async (requset, response) => {
     if (updateUser) {
         await sendOtpMail(user,otp);
       //await sendOtp(user, otp); // Make sure to await
-      console.log("✅ OTP email sent successfully!"+updateUser.email);
+     // console.log("✅ OTP email sent successfully!"+updateUser.email);
     }
 
     return response.status(200).json({

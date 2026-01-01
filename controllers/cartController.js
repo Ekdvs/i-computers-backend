@@ -7,36 +7,44 @@ export const addToCart = async (req, res) => {
     const userId = req.userId;
     const { productId, quantity } = req.body;
 
-    if (!productId) {
+    if (!productId || quantity < 1) {
       return res.status(400).json({
-        message: "Product id is required",
-        error: true,
         success: false,
+        message: "Product ID and quantity (>=1) are required",
       });
     }
 
     const product = await Product.findById(productId);
-    if (!product || product.stock < quantity) {
+    if (!product) {
       return res.status(404).json({
-        message: "Product not found or out of stock",
-        error: true,
         success: false,
+        message: "Product not found",
       });
     }
 
+    if (product.stock < quantity) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient stock",
+      });
+    }
+
+    // Find user's cart
     let cart = await Cart.findOne({ user: userId });
 
     if (!cart) {
-      // Create new cart if not exists
+      // create new cart
       cart = new Cart({
         user: userId,
         items: [{ product: productId, quantity }],
       });
     } else {
       const index = cart.items.findIndex(
-        (i) => i.product.toString() === productId
+        (item) => item.product.toString() === productId
       );
+
       if (index >= 0) {
+        // update quantity
         cart.items[index].quantity += quantity;
       } else {
         cart.items.push({ product: productId, quantity });
@@ -45,18 +53,20 @@ export const addToCart = async (req, res) => {
 
     await cart.save();
 
+    // Populate product details for frontend
+    const populatedCart = await Cart.findById(cart._id).populate("items.product");
+
     return res.status(200).json({
-      message: "Product added to cart successfully",
-      error: false,
       success: true,
-      data: cart,
+      message: "Product added to cart successfully",
+      data: populatedCart,
     });
   } catch (error) {
     console.error("Add to cart error:", error);
     return res.status(500).json({
-      message: "Something went wrong",
-      error: true,
       success: false,
+      message: "Something went wrong",
+      error: error.message,
     });
   }
 };

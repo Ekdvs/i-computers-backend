@@ -78,7 +78,6 @@ export const deleteProductById = async(request,response)=>{
 
         const deletedProduct=await Product.findByIdAndDelete(productId);
 
-        console.log("444444444444",deletedProduct)
 
         if(!deletedProduct){
             return response.status(404).json({
