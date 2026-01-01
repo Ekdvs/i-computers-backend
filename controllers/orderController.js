@@ -1,9 +1,9 @@
 import { request } from "express";
 import Cart from "../models/cart.model.js";
-import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
 import { nanoid } from "nanoid";
 import Coupon from "../models/coupon.model.js";
+import Order from "../models/order.model.js";
 
 
 export const createOrder = async (req, res) => {
@@ -221,57 +221,75 @@ export const updateOrderStatus = async (req, res) => {
 
 //finace summary
 export const getFinanceSummary = async (req, res) => {
-  const totalRevenue = await Order.aggregate([
-    { $match: { paymentStatus: "paid" } },
-    { $group: { _id: null, total: { $sum: "$total" } } },
-  ]);
-
-  const totalOrders = await Order.countDocuments();
-  const paidOrders = await Order.countDocuments({ paymentStatus: "paid" });
-  const pendingOrders = await Order.countDocuments({ paymentStatus: "pending" });
-
-  res.json({
-    success: true,
-    data: {
-      totalRevenue: totalRevenue[0]?.total || 0,
+  try {
+    const [
+      revenue,
       totalOrders,
       paidOrders,
       pendingOrders,
-    },
-  });
+      refundedOrders,
+    ] = await Promise.all([
+      Order.aggregate([
+        { $match: { paymentStatus: "paid" } },
+        { $group: { _id: null, total: { $sum: "$total" } } },
+      ]),
+      Order.countDocuments(),
+      Order.countDocuments({ paymentStatus: "paid" }),
+      Order.countDocuments({ paymentStatus: "pending" }),
+      Order.countDocuments({ paymentStatus: "refunded" }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalRevenue: revenue[0]?.total || 0,
+        totalOrders,
+        paidOrders,
+        pendingOrders,
+        refundedOrders,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Finance summary failed",
+    });
+  }
 };
 
 
+
 //monthly sales report
-export const getMonthlySalesReport = async(request,response)=>{
-    try {
-        
-        const monthlySales= await Order.aggregate([
-            {
-                $match:{status:"Paid"}
-            },
-            {
-                $group:{
-                    _id:{ $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-                    totalAmount: { $sum: "$total" },
-                    orderCount: { $sum: 1 }
-                }
-            }
-        ]);
+export const getMonthlySalesReport = async (req, res) => {
+  try {
+    const monthlySales = await Order.aggregate([
+      {
+        $match: {
+          paymentStatus: "paid",
+          status: "delivered",
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m", date: "$createdAt" },
+          },
+          revenue: { $sum: "$total" },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
 
-        return response.status(200).json({
-            message:"Monthly sales report fetched successfully",
-            data:{monthlySales},
-            success:true,
-            error:false
-        });
+    res.json({
+      success: true,
+      data: monthlySales,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Monthly sales failed",
+    });
+  }
+};
 
-    } catch (error) {
-        console.error("getMonthly Summary error:", error);
-        return response.status(500).json({
-        message: "Something went wrong during update",
-        error: true,
-        success: false,
-        });
-    }
-}

@@ -15,7 +15,6 @@ orderRouter.get("/get/:id",getOrderById);
 // Admin
 orderRouter.get("/getall", auth, admin, getAllOdres);
 orderRouter.put("/status/:id", auth, admin, updateOrderStatus);
-orderRouter.get('/finance-summary',auth,admin,getFinanceSummary);
-orderRouter.get('/monthly-sales',auth,admin,getMonthlySalesReport);
+
 
 export default orderRouter;

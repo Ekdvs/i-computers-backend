@@ -10,6 +10,7 @@ import orderRouter from "./routers/orderRoutes.js";
 import paymentRoutes from "./routers/paymentRoutes.js";
 import couponRouter from "./routers/couponRouter.js";
 import contactRouter from "./routers/contactRouter.js";
+import adminRouter from "./routers/adminRouter.js";
 
 
 dotenv.config();
@@ -34,6 +35,7 @@ app.use('/api/order',orderRouter)
 app.use('/api/payment',paymentRoutes)
 app.use("/api/coupon", couponRouter);
 app.use('/api/contact',contactRouter)
+app.use('/api/admin',adminRouter)
 
 app.get("/", (req, res) => {
   res.send("Server is running!");
