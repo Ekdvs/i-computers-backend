@@ -4,7 +4,7 @@ import generatedAccesToken from "../utill/generatedAccesToken.js";
 import generatedRefreshToken from "../utill/generatedRefreshToken.js";
 import axios from "axios";
 import generatedOtp from "../utill/genarateOtp.js";
-import { sendOtpMail, sendWelcomeOffer } from "../services/email/mailtemplate/sendMail.js";
+import { sendOtpMail, sendWelcomeMail, sendWelcomeOffer } from "../services/email/mailtemplate/sendMail.js";
 import Coupon from "../models/coupon.model.js";
 
 // Use same config for login & logout
