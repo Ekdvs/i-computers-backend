@@ -443,6 +443,7 @@ export const googleLogin = async (req, res) => {
         avatar: picture, 
         password:'Provide Password',
         provider: "google",
+        verify_email:true,
         last_lagin_date:Date.now()
       });
       const coupon = await Coupon.findOne({ code: "WELCOME20" });

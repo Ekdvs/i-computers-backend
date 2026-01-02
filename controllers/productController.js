@@ -27,39 +27,90 @@ export const createProduct =async(request,response)=>{
     }
 }
 
-//get all products
-export const getAllProducts = async(request,response)=>{
-    try {
-        const userId=request.userId;
-        const user=UserModel.findById(userId).select("-password");
-        if(user.role=='ADMIN'){
-            const products=await Product.find();
-            return response.status(200).json({
-                message:"Products fetched successfully",
-                error:false,
-                success:true,
-                data:products
-               }) 
-        }else{
-             const products=await Product.find({isAvailable:true});
-            return response.status(200).json({
-                message:"Products fetched successfully",
-                error:false,
-                success:true,
-                data:products
-               }) 
-        }
+//get all user products
+export const getAllProducts = async (req, res) => {
+  try {
+    // pagination
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 12);
+    const skip = (page - 1) * limit;
 
-        
-    } catch (error) {
-        console.error("Update user error:", error);
-        return response.status(500).json({
-        message: "Something went wrong during update",
-        error: true,
-        success: false,
-        });
-    }
-}
+    // public users see only available products
+    const filter = {
+    isAvailable: true,
+    stock: { $gt: 0 }
+    };
+
+
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .sort({ _id: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      error: false,
+      data: products,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+    });
+  } catch (error) {
+    console.error("Get products error:", error);
+    return res.status(500).json({
+      message: "Server error",
+      success: false,
+      error: true,
+    });
+  }
+};
+
+//admin getall products
+export const getAllProductsAdmin = async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit) || 20);
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Product.find({})
+        .sort({ _id: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments(),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      error: false,
+      data: products,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+    });
+  } catch (error) {
+    console.error("Admin get products error:", error);
+    res.status(500).json({
+      success: false,
+      error: true,
+      message: "Server error",
+    });
+  }
+};
+
 
 //delete product by id
 export const deleteProductById = async(request,response)=>{
